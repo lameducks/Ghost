@@ -1,6 +1,6 @@
 [submodule "content/themes/casper"]
 	path = content/themes/casper
-	url = https://github.com/lameducks/Ghost-Casper.git
+	url = https://github.com/levee223/ghost-casper.git
 [submodule "core/client"]
 	path = core/client
-	url = https://github.com/lameducks/Ghost-Admin.git
+	url = https://github.com/levee223/ghost-admin.git
