@@ -2,19 +2,30 @@
 
 FROM node:14-alpine3.12 as build
 
-COPY . /work/sources
+RUN set -eux; \
+    apk update; \
+    apk upgrade; \
+    apk add git; \
+    yarn config set network-timeout 1200000
 
-RUN apk update \
-    && apk upgrade \
-    && apk add git \
-    && cd /work/sources \
-    && yarn config set network-timeout 1200000 \
-    && yarn install --prod \
-    && cp -rp node_modules /work/. \
-    && yarn install \
-    && yarn global add grunt-cli \
-    && grunt release \
-    && cp -rpT /work/sources/.docker/overlay /work/sources/.build/release/
+COPY core/client/package.json core/client/yarn.lock /work/sources/core/client/
+RUN set -eux; \
+    yarn global add grunt-cli \
+    cd /work/sources/core/client; \
+    yarn install
+
+COPY package.json yarn.lock /work/sources/
+RUN set -eux; \
+    cd /work/sources; \
+    yarn install --prod; \
+    cp -rp node_modules /work/node_modules-prod; \
+    yarn install
+
+COPY . /work/sources/
+RUN set -eux; \
+    cd /work/sources; \
+    grunt release; \
+    cp -rpT /work/sources/.docker/overlay /work/sources/.build/release/
 
 ## 2nd stage
 
@@ -29,8 +40,9 @@ VOLUME ["$GHOST_CONTENT/images", "$GHOST_CONTENT/settings"]
 WORKDIR $GHOST_INSTALL
 CMD ["node", "index.js"]
 
-RUN apk upgrade --no-cache \
-    && rm -rfv /tmp/*
+RUN set -eux; \
+    apk upgrade --no-cache; \
+    rm -rfv /tmp/*
 
-COPY --from=build /work/node_modules $GHOST_INSTALL/node_modules
+COPY --from=build /work/node_modules-prod $GHOST_INSTALL/node_modules
 COPY --from=build /work/sources/.build/release $GHOST_INSTALL/
